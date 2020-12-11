@@ -1,0 +1,70 @@
+{
+    "id": "FeatureTree",
+    "script": "App-FeatureTree",
+    "label": "Feature/Gene Tree"
+    "description": "Estimate phylogeny of gene or other sequence feature"
+    "default_memory": "4G",
+    "parameters": [
+        {
+            "id": "sequences",
+            "label": "Input Sequences",
+            "allow_multiple": false,
+            "required": true,
+            "type": "string"
+            "source": "enum",
+            "enum" : ["msa", "fasta", "phylip", "feature_group"]
+            "status" : {
+                "id": "aligned_status",
+                "value": ["aligned", "unaligned"]
+            }
+            "alphabet": {
+                "id": "alphabet",
+                "label": "DNA|RNA|Protein",
+                "required": 0,
+                "default": "infer",
+                "desc": "Sequence alphabet: DNA or RNA or Protein",
+                "type": "enum",
+                "enum": ["DNA", "RNA", "Protein", "infer"]
+            }
+        },
+        {
+            "id": "protein_model",
+            "label": "Protein Model",
+            "required": 0,
+            "default": "LG",
+            "type": "enum",
+            "enum": []
+            "raxml_protein_models" : ["DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", 
+                            "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", "HIVB", "HIVW", 
+                            "JTTDCMUT", "FLU", "STMTREV", "DUMMY", "DUMMY2", "AUTO", "LG4M", "LG4X", 
+                            "PROT_FILE", "GTR_UNLINKED", "GTR"]
+            "phyml_protein_models" : ["LG", "WAG", "JTT", "MtREV", "Dayhoff", "DCMut", "RtREV", "CpREV", 
+                            "VT", "AB", "Blosum62", "MtMam", "MtArt", "HIVw", "HIVb"]
+        },
+        {
+            "id": "recipe",
+            "label": "FeatureTree recipe",
+            "required": 0,
+            "default": "RAxML",
+            "desc": "Recipe used for FeatureTree analysis",
+            "type": "enum",
+            "enum": ["RAxML", "PhyML"]
+        },
+        {
+            "id": "output_path",
+            "label": "Output Folder",
+            "required": 1,
+            "default": null,
+            "desc": "Path to which the output will be written. Defaults to the directory containing the input data.",
+            "type": "folder"
+        },
+        {
+            "id":"output_file",
+            "label":"File Basename",
+            "required": 1,
+            "default":null,
+            "desc":"Basename for the generated output files. Defaults to the basename of the input data.",
+            "type":"wsid"
+        }
+    ]
+}
