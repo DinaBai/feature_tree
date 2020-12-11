@@ -8,24 +8,26 @@
         {
             "id": "sequences",
             "label": "Input Sequences",
-            "allow_multiple": false,
             "required": true,
             "type": "string"
-            "source": "enum",
-            "enum" : ["msa", "fasta", "phylip", "feature_group"]
-            "status" : {
-                "id": "aligned_status",
-                "value": ["aligned", "unaligned"]
-            }
-            "alphabet": {
-                "id": "alphabet",
-                "label": "DNA|RNA|Protein",
-                "required": 0,
-                "default": "infer",
-                "desc": "Sequence alphabet: DNA or RNA or Protein",
-                "type": "enum",
-                "enum": ["DNA", "RNA", "Protein", "infer"]
-            }
+        },
+        {
+            "id": "sequence_source",
+            "source" : "enum",
+            "enum" : ["msa", "fasta_text", "feature_group"]
+        },
+        {
+            "id": "aligned_status",
+            "value": bool
+            "default": false
+        },
+        {
+            "id": "alphabet",
+            "label": "DNA|RNA|Protein",
+            "required": 0,
+            "desc": "Sequence alphabet: DNA or RNA or Protein",
+            "type": "enum",
+            "enum": ["DNA", "RNA", "Protein"]
         },
         {
             "id": "protein_model",
@@ -33,7 +35,7 @@
             "required": 0,
             "default": "LG",
             "type": "enum",
-            "enum": []
+            "enum": "phyml_models",
             "raxml_protein_models" : ["DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", 
                             "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", "HIVB", "HIVW", 
                             "JTTDCMUT", "FLU", "STMTREV", "DUMMY", "DUMMY2", "AUTO", "LG4M", "LG4X", 
@@ -54,16 +56,14 @@
             "id": "output_path",
             "label": "Output Folder",
             "required": 1,
-            "default": null,
-            "desc": "Path to which the output will be written. Defaults to the directory containing the input data.",
+            "desc": "Path to which the output will be written.",
             "type": "folder"
         },
         {
             "id":"output_file",
             "label":"File Basename",
             "required": 1,
-            "default":null,
-            "desc":"Basename for the generated output files. Defaults to the basename of the input data.",
+            "desc":"Basename for the generated output files.",
             "type":"wsid"
         }
     ]
