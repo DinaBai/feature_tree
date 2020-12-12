@@ -13,6 +13,7 @@ use JSON;
 use Bio::KBase::AppService::AppConfig;
 use Bio::KBase::AppService::AppScript;
 use Cwd;
+use Alignment; # should be in lib directory
 
 our $global_ws;
 our $global_token;
@@ -22,13 +23,19 @@ our $shock_cutoff = 10_000;
 my $data_url = Bio::KBase::AppService::AppConfig->data_api_url;
 # my $data_url = "http://www.alpha.patricbrc.org/api";
 
-my $script = Bio::KBase::AppService::AppScript->new(\&process_rnaseq, \&preflight);
-my $rc = $script->run(\@ARGV);
-exit $rc;
+my $testing = 1;
+print "args = ", join("\n", @ARGV), "\n";
 
-# use JSON;
-# my $temp_params = JSON::decode_json(`cat /home/fangfang/P3/dev_container/modules/app_service/test_data/rna.inp`);
-# process_rnaseq('RNASeq', undef, undef, $temp_params);
+if ($testing) {
+    my $temp_params = JSON::decode_json(`cat /homes/allan/projects/gene_tree/small_boot_proteins.phy.reduced`);
+    my $rc = build_tree('FeatureTree', undef, undef, $temp_params);
+    exit $rc;
+}
+
+
+my $script = Bio::KBase::AppService::AppScript->new(\&build_tree, \&preflight);
+my $rc = $script->run(\@ARGV);
+
 
 sub preflight
 {
@@ -46,27 +53,14 @@ sub preflight
 
 
 
-sub process_rnaseq {
+sub build_tree {
     my ($app, $app_def, $raw_params, $params) = @_;
 
-    print "Proc RNASeq ", Dumper($app_def, $raw_params, $params);
+    print "Proc FeatureTree build_tree ", Dumper($app_def, $raw_params, $params);
     my $time1 = `date`;
 
     my $parallel = $ENV{P3_ALLOCATED_CPU};
 
-    #
-    # Redirect tmp to large NFS if more than 4 input files.
-    # (HACK)
-    #
-    my $file_count = count_params_files($params);
-    print STDERR "File count: $file_count\n";
-    my $bigtmp = "/vol/patric3/tmp";
-    if ($file_count > 4 && -d $bigtmp)
-    {
-	print STDERR "Changing tmp from $ENV{TEMPDIR} to $bigtmp\n";
-	$ENV{TEMPDIR} = $ENV{TMPDIR} = $bigtmp;
-    }
-    
     $global_token = $app->token();
     $global_ws = $app->workspace;
     
@@ -75,26 +69,20 @@ sub process_rnaseq {
     
     my $recipe = $params->{recipe};
     
-    # my $tmpdir = File::Temp->newdir();
     my $tmpdir = File::Temp->newdir( CLEANUP => 1 );
-    # my $tmpdir = "/tmp/RNApubref";
-    # my $tmpdir = "/tmp/RNAuser";
     system("chmod", "755", "$tmpdir");
     print STDERR "$tmpdir\n";
     $params = localize_params($tmpdir, $params);
-    
+    print "after localize_params:\n", Dumper($params);
+
     my @outputs;
     my $prefix = $recipe;
     my $host = 0;
-    if ($recipe eq 'Rockhopper') {
-        @outputs = run_rockhopper($params, $tmpdir);
-    } elsif ($recipe eq 'Tuxedo' || $recipe eq 'RNA-Rocket') {
-        @outputs = run_rna_rocket($params, $tmpdir, $host, $parallel);
-        $prefix = 'Tuxedo';
-    } elsif ($recipe eq 'Host') {
-        $host = 1;
-        @outputs = run_rna_rocket($params, $tmpdir, $host, $parallel);
-        $prefix = 'Host';
+
+    if ($recipe eq 'RAxML') {
+        @outputs = run_raxml($params, $tmpdir);
+    } elsif ($recipe eq 'PhyML') {
+        @outputs = run_phyml($params, $tmpdir);
     } else {
         die "Unrecognized recipe: $recipe \n";
     }
@@ -173,8 +161,8 @@ sub process_rnaseq {
     write_output("Start: $time1"."End:   $time2", "$tmpdir/DONE");
 }
 
-sub run_rna_rocket {
-    my ($params, $tmpdir, $host, $parallel) = @_;
+sub run_raxml {
+    my ($params, $tmpdir) = @_;
 
     $parallel //= 1;
     
