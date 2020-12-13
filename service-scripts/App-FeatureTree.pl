@@ -11,8 +11,8 @@ use File::Basename;
 use IPC::Run 'run';
 use JSON;
 use File::Copy 'copy';
-#use Bio::KBase::AppService::AppConfig;
-#use Bio::KBase::AppService::AppScript;
+use Bio::KBase::AppService::AppConfig;
+use Bio::KBase::AppService::AppScript;
 use Cwd;
 use Feature_Alignment; # should be in lib directory
 
@@ -21,10 +21,10 @@ our $global_token;
 
 our $shock_cutoff = 10_000;
 
-#my $data_url = Bio::KBase::AppService::AppConfig->data_api_url;
-# my $data_url = "http://www.alpha.patricbrc.org/api";
+my $data_url = Bio::KBase::AppService::AppConfig->data_api_url;
+#my $data_url = "http://www.alpha.patricbrc.org/api";
 
-my $testing = 1;
+my $testing = 0;
 print "args = ", join("\n", @ARGV), "\n";
 
 if ($testing) {
@@ -65,7 +65,7 @@ sub build_tree {
     
     my $recipe = $params->{parameters}{recipe};
     
-    my $tmpdir = File::Temp->newdir( CLEANUP => 0 );
+    my $tmpdir = File::Temp->newdir( "FeatureTree_XXXXX", CLEANUP => 0 );
     system("chmod", "755", "$tmpdir");
     print STDERR "$tmpdir\n";
     #$params = localize_params($tmpdir, $params);
@@ -80,7 +80,10 @@ sub build_tree {
     my $seq_file_name = '';
     if ($params->{parameters}{sequences_from_local_file}) {
         $seq_file_name = basename($params->{parameters}{sequences_from_local_file});
-        copy($params->{parameters}{sequences_from_local_file}, $seq_file_name) or die ("could not copy $params->{parameters}{sequences_from_local_file} to $tmpdir/$seq_file_name");
+        print STDERR "basename of data file is $seq_file_name\n";
+        copy($params->{parameters}{sequences_from_local_file}, "$tmpdir/$seq_file_name") or die ("could not copy $params->{parameters}{sequences_from_local_file} to $tmpdir/$seq_file_name");
+        run("echo $tmpdir && ls -ltr $tmpdir");
+
     }
     my $model = "GTR"; # default for DNA
     if ($params->{parameters}{alphabet} eq 'Protein') {
