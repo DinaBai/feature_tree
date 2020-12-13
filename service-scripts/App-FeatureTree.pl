@@ -10,6 +10,7 @@ use File::Slurp;
 use File::Basename;
 use IPC::Run 'run';
 use JSON;
+use File::Copy 'copy';
 #use Bio::KBase::AppService::AppConfig;
 #use Bio::KBase::AppService::AppScript;
 use Cwd;
@@ -20,14 +21,14 @@ our $global_token;
 
 our $shock_cutoff = 10_000;
 
-my $data_url = Bio::KBase::AppService::AppConfig->data_api_url;
+#my $data_url = Bio::KBase::AppService::AppConfig->data_api_url;
 # my $data_url = "http://www.alpha.patricbrc.org/api";
 
 my $testing = 1;
 print "args = ", join("\n", @ARGV), "\n";
 
 if ($testing) {
-    my $temp_params = JSON::decode_json(`cat /homes/allan/projects/gene_tree/small_boot_proteins.phy.reduced`);
+    my $temp_params = JSON::decode_json(`cat /homes/allan/git/dev_container/modules/feature_tree/app_specs/instantiated_FeatureTree_1.json`);
     my $rc = build_tree('FeatureTree', undef, undef, $temp_params);
     exit $rc;
 }
@@ -59,28 +60,37 @@ sub build_tree {
     print "Proc FeatureTree build_tree ", Dumper($app_def, $raw_params, $params);
     my $time1 = `date`;
 
-    my $parallel = $ENV{P3_ALLOCATED_CPU};
-
-    $global_token = $app->token();
-    $global_ws = $app->workspace;
+    #$global_token = $app->token();
+    #$global_ws = $app->workspace;
     
-    my $output_folder = $app->result_folder();
-    # my $output_base   = $params->{output_file};
-    
-    my $recipe = $params->{recipe};
+    my $recipe = $params->{parameters}{recipe};
     
     my $tmpdir = File::Temp->newdir( CLEANUP => 0 );
     system("chmod", "755", "$tmpdir");
     print STDERR "$tmpdir\n";
-    $params = localize_params($tmpdir, $params);
-    print "after localize_params:\n", Dumper($params);
+    #$params = localize_params($tmpdir, $params);
+    #print "after localize_params:\n", Dumper($params);
+    #
+    # Write job description.
+    my $json = JSON::XS->new->pretty(1);
+    my $jdesc = "$tmpdir/jobdesc.json";
+    write_file($jdesc, $json->encode($params));
+    
 
+    my $seq_file_name = '';
+    if ($params->{parameters}{sequences_from_local_file}) {
+        $seq_file_name = basename($params->{parameters}{sequences_from_local_file});
+        copy($params->{parameters}{sequences_from_local_file}, $seq_file_name) or die ("could not copy $params->{parameters}{sequences_from_local_file} to $tmpdir/$seq_file_name");
+    }
+    my $model = "GTR"; # default for DNA
+    if ($params->{parameters}{alphabet} eq 'Protein') {
+        $model = $params->{parameters}{protein_model}
+    }
+    my $output_name = $params->{parameters}{output_file};
+    
     my @outputs;
-    my $prefix = $recipe;
-    my $host = 0;
-
     if ($recipe eq 'RAxML') {
-        @outputs = run_raxml($params, $tmpdir);
+        @outputs = run_raxml($seq_file_name, $model, $output_name, $tmpdir);
     } elsif ($recipe eq 'PhyML') {
         @outputs = run_phyml($params, $tmpdir);
     } else {
@@ -88,6 +98,9 @@ sub build_tree {
     }
     
     print STDERR '\@outputs = '. Dumper(\@outputs);
+    
+    my $output_folder = $app->result_folder();
+    # my $output_base   = $params->{output_file};
     
     #
     # Create folders first.
@@ -151,8 +164,8 @@ sub build_tree {
 	{
 	    my $filename = basename($ofile);
 	    print STDERR "Output folder = $output_folder\n";
-	    print STDERR "Saving $ofile => $output_folder/$prefix\_$filename ...\n";
-	    $app->workspace->save_file_to_file("$ofile", {}, "$output_folder/$prefix\_$filename", $type, 1,
+	    print STDERR "Saving $ofile => $output_folder/$filename ...\n";
+	    $app->workspace->save_file_to_file("$ofile", {}, "$output_folder/$filename", $type, 1,
 					       (-s "$ofile" > $shock_cutoff ? 1 : 0), # use shock for larger files
 					       $global_token);
 	}
@@ -162,41 +175,45 @@ sub build_tree {
 }
 
 sub run_raxml {
-    my ($params, $alignment, $tmpdir) = @_;
+    my ($alignment_file, $model, $output_name, $tmpdir) = @_;
 
     my $parallel = $ENV{P3_ALLOCATED_CPU};
-    $parallel = min($parallel, 2)
+    $parallel = 2 if $parallel < 2;
     
     my $cwd = getcwd();
     
-    my $json = JSON::XS->new->pretty(1);
     #
-    # Write job description.
-    #
-    my $jdesc = "$tmpdir/jobdesc.json";
-    write_file($jdesc, $json->encode($params));
-    
     #my $data_api = Bio::KBase::AppService::AppConfig->data_api_url;
     #my $dat = { data_api => "$data_api/genome_feature" };
     # no pretty, ensure it's on one line
     #my $sstring = encode_json($dat);
 
-    my @cmd = ("raxmlHPC-PTHREADS-SSE3")
-    push @cmd, ("-threads", $parallel);
+    if ($model eq 'GTR') {
+        $model = 'GTRGAMMA'
+    }
+    else {
+        $model = "PROTCAT".$model
+    }
+
+    my @cmd = ("raxmlHPC-PTHREADS-SSE3");
+    push @cmd, ("-T", $parallel);
     push @cmd, ("-p", "12345");
-    push @cmd, ("-m", $params->{model});
-    push @cmd, ("-s", $params->{sequence_source};
+    push @cmd, ("-m", $model);
+    push @cmd, ("-s", $alignment_file);
+    push @cmd, ("-n", $output_name);
     
     print STDERR "cmd = ", join(" ", @cmd) . "\n\n";
-    
+   
+    chdir($tmpdir); 
     my ($rc, $out, $err) = run_cmd(\@cmd);
+    chdir($cwd);
     print STDERR "STDOUT:\n$out\n";
     print STDERR "STDERR:\n$err\n";
     
-    run("echo $outdir && ls -ltr $outdir");
+    run("echo $tmpdir && ls -ltr $tmpdir");
     
     my @outputs;
-    my @files = glob("$outdir/*.txt");
+    my @files = glob("$tmpdir/*.txt");
     @outputs = map { [ $_, 'txt' ] } @files;
     
     return @outputs;
