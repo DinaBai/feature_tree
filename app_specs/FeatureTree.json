@@ -1,33 +1,34 @@
 {
     "id": "FeatureTree",
     "script": "App-FeatureTree",
-    "label": "Feature/Gene Tree"
-    "description": "Estimate phylogeny of gene or other sequence feature"
+    "label": "Feature/Gene Tree",
+    "description": "Estimate phylogeny of gene or other sequence feature",
     "default_memory": "4G",
     "parameters": [
         {
             "id": "sequences",
             "label": "Input Sequences",
-            "required": true,
+            "required": 1,
             "type": "string"
         },
         {
             "id": "sequence_source",
-            "source" : "enum",
-            "enum" : ["msa", "fasta_text", "feature_group"]
+            "type" : "enum",
+            "required": 1,
+            "enum" : ["ws", "upload", "local_file"]
         },
         {
             "id": "aligned_status",
-            "value": bool
+            "type": "bool",
             "default": false
         },
         {
             "id": "alphabet",
-            "label": "DNA|RNA|Protein",
+            "label": "DNA or Protein",
             "required": 0,
             "desc": "Sequence alphabet: DNA or RNA or Protein",
             "type": "enum",
-            "enum": ["DNA", "RNA", "Protein"]
+            "enum": ["DNA", "Protein"]
         },
         {
             "id": "protein_model",
@@ -35,12 +36,7 @@
             "required": 0,
             "default": "LG",
             "type": "enum",
-            "enum": "phyml_models",
-            "raxml_protein_models" : ["DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", 
-                            "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", "HIVB", "HIVW", 
-                            "JTTDCMUT", "FLU", "STMTREV", "DUMMY", "DUMMY2", "AUTO", "LG4M", "LG4X", 
-                            "PROT_FILE", "GTR_UNLINKED", "GTR"]
-            "phyml_protein_models" : ["LG", "WAG", "JTT", "MtREV", "Dayhoff", "DCMut", "RtREV", "CpREV", 
+            "enum": ["LG", "WAG", "JTT", "MtREV", "Dayhoff", "DCMut", "RtREV", "CpREV", 
                             "VT", "AB", "Blosum62", "MtMam", "MtArt", "HIVw", "HIVb"]
         },
         {

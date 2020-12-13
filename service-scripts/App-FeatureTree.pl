@@ -21,18 +21,21 @@ our $global_token;
 
 our $shock_cutoff = 10_000;
 
-my $data_url = Bio::KBase::AppService::AppConfig->data_api_url;
-#my $data_url = "http://www.alpha.patricbrc.org/api";
-
-my $testing = 0;
+my $testing = 1;
 print "args = ", join("\n", @ARGV), "\n";
 
-if ($testing) {
-    my $temp_params = JSON::decode_json(`cat /homes/allan/git/dev_container/modules/feature_tree/app_specs/instantiated_FeatureTree_1.json`);
+if ( -e $ARGV[0]) { #testing
+    #my $temp_params = JSON::decode_json(`cat /homes/allan/git/dev_container/modules/feature_tree/app_specs/instantiated_FeatureTree_1.json`);
+    print "Testing with json file $ARGV[0]\n";
+    my $json_data = File::Slurp::read_file($ARGV[0]);
+    my $temp_params = JSON::decode_json($json_data);
+    print " now call build_tree with the json object\n";
     my $rc = build_tree('FeatureTree', undef, undef, $temp_params);
     exit $rc;
 }
 
+my $data_url = Bio::KBase::AppService::AppConfig->data_api_url;
+#my $data_url = "http://www.alpha.patricbrc.org/api";
 
 my $script = Bio::KBase::AppService::AppScript->new(\&build_tree, \&preflight);
 my $rc = $script->run(\@ARGV);
@@ -52,8 +55,6 @@ sub preflight
     return $pf;
 }
 
-
-
 sub build_tree {
     my ($app, $app_def, $raw_params, $params) = @_;
 
@@ -63,9 +64,9 @@ sub build_tree {
     #$global_token = $app->token();
     #$global_ws = $app->workspace;
     
-    my $recipe = $params->{parameters}{recipe};
+    my $recipe = $params->{recipe};
     
-    my $tmpdir = File::Temp->newdir( "FeatureTree_XXXXX", CLEANUP => 0 );
+    my $tmpdir = File::Temp->newdir( "/tmp/FeatureTree_XXXXX", CLEANUP => 0 );
     system("chmod", "755", "$tmpdir");
     print STDERR "$tmpdir\n";
     #$params = localize_params($tmpdir, $params);
@@ -78,22 +79,26 @@ sub build_tree {
     
 
     my $seq_file_name = '';
-    if ($params->{parameters}{sequences_from_local_file}) {
-        $seq_file_name = basename($params->{parameters}{sequences_from_local_file});
+    if ($params->{sequence_source} eq 'local_file') {
+        $seq_file_name = basename($params->{sequences});
         print STDERR "basename of data file is $seq_file_name\n";
-        copy($params->{parameters}{sequences_from_local_file}, "$tmpdir/$seq_file_name") or die ("could not copy $params->{parameters}{sequences_from_local_file} to $tmpdir/$seq_file_name");
+        copy($params->{sequences}, "$tmpdir/$seq_file_name") or die ("could not copy $params->{sequences} to $tmpdir/$seq_file_name");
         run("echo $tmpdir && ls -ltr $tmpdir");
 
     }
-    my $model = "GTR"; # default for DNA
-    if ($params->{parameters}{alphabet} eq 'Protein') {
-        $model = $params->{parameters}{protein_model}
+    my $model = "AUTO"; # default for protein
+    if ($params->{alphabet} eq 'Protein' and $params->{protein_model}) {
+        $model = $params->{protein_model}
     }
-    my $output_name = $params->{parameters}{output_file};
-    
+    elsif ($params->{alphabet} eq 'DNA') {
+        $model = "GTR"
+    }
+    my $output_name = $params->{output_file};
+    my $alphabet = $params->{alphabet};
+
     my @outputs;
     if ($recipe eq 'RAxML') {
-        @outputs = run_raxml($seq_file_name, $model, $output_name, $tmpdir);
+        @outputs = run_raxml($seq_file_name, $alphabet, $model, $output_name, $tmpdir);
     } elsif ($recipe eq 'PhyML') {
         @outputs = run_phyml($params, $tmpdir);
     } else {
@@ -104,71 +109,29 @@ sub build_tree {
     
     my $output_folder = $app->result_folder();
     # my $output_base   = $params->{output_file};
+    #$app->workspace->create( { objects => [[$path, 'folder']] } );
     
-    #
-    # Create folders first.
-    #
-    for my $fent (grep { $_->[1] eq 'folder' } @outputs)
-    {
-	my $folder = $fent->[0];
-	my $file = basename($folder);
-	my $path = "$output_folder/$file";
-	eval {
-	    $app->workspace->create( { objects => [[$path, 'folder']] } );
-	};
-	if ($@)
-	{
-	    warn "error creating $path: $@";
-	}
-	else
-	{
-	    my $type ="txt";
-	    if (opendir(my $dh, $folder))
-	    {
-		while (my $filename = readdir($dh))
-		{
-		    if ($filename =~ /\.json$/)
-		    {
-			my $ofile = "$folder/$filename";
-			my $dest = "$path/$filename";
-			print STDERR "Output folder = $folder\n";
-			print STDERR "Saving $ofile => $dest ...\n";
-			$app->workspace->save_file_to_file($ofile, {}, $dest, $type, 1,
-							   (-s "$ofile" > $shock_cutoff ? 1 : 0), # use shock for larger files
-							   $global_token);
-		    }
-		}
-	    }
-	    else
-	    {
-		warn "Cannot open output folder $folder: $!";
-	    }
-	}
-    }
-    for my $output (@outputs)
-    {
-	my($ofile, $type) = @$output;
-	next if $type eq 'folder';
-	
-	if (! -f $ofile)
-	{
-	    warn "Output file '$ofile' of type '$type' does not exist\n";
-	    next;
-	}
-	
-	if ($type eq 'job_result')
-	{
+    for my $output (@outputs) {
+        my($ofile, $type) = @$output;
+        next if $type eq 'folder';
+        
+        if (! -f $ofile) {
+            warn "Output file '$ofile' of type '$type' does not exist\n";
+            next;
+        }
+        
+        if ($type eq 'job_result') {
             my $filename = basename($ofile);
             print STDERR "Output folder = $output_folder\n";
             print STDERR "Saving $ofile => $output_folder/$filename ...\n";
             $app->workspace->save_file_to_file("$ofile", {},"$output_folder/$filename", $type, 1);
-	}
-	else
-	{
-	    my $filename = basename($ofile);
-	    print STDERR "Output folder = $output_folder\n";
-	    print STDERR "Saving $ofile => $output_folder/$filename ...\n";
-	    $app->workspace->save_file_to_file("$ofile", {}, "$output_folder/$filename", $type, 1,
+        }
+        else
+        {
+            my $filename = basename($ofile);
+            print STDERR "Output folder = $output_folder\n";
+            print STDERR "Saving $ofile => $output_folder/$filename ...\n";
+            $app->workspace->save_file_to_file("$ofile", {}, "$output_folder/$filename", $type, 1,
 					       (-s "$ofile" > $shock_cutoff ? 1 : 0), # use shock for larger files
 					       $global_token);
 	}
@@ -178,24 +141,18 @@ sub build_tree {
 }
 
 sub run_raxml {
-    my ($alignment_file, $model, $output_name, $tmpdir) = @_;
+    my ($alignment_file, $alphabet, $model, $output_name, $tmpdir) = @_;
 
     my $parallel = $ENV{P3_ALLOCATED_CPU};
     $parallel = 2 if $parallel < 2;
     
     my $cwd = getcwd();
     
-    #
-    #my $data_api = Bio::KBase::AppService::AppConfig->data_api_url;
-    #my $dat = { data_api => "$data_api/genome_feature" };
-    # no pretty, ensure it's on one line
-    #my $sstring = encode_json($dat);
-
-    if ($model eq 'GTR') {
+    if ($alphabet eq 'DNA') {
         $model = 'GTRGAMMA'
     }
     else {
-        $model = "PROTCAT".$model
+        $model = "PROTCAT". uc($model)
     }
 
     my @cmd = ("raxmlHPC-PTHREADS-SSE3");
@@ -209,49 +166,20 @@ sub run_raxml {
    
     chdir($tmpdir); 
     my ($rc, $out, $err) = run_cmd(\@cmd);
-    chdir($cwd);
     print STDERR "STDOUT:\n$out\n";
     print STDERR "STDERR:\n$err\n";
     
-    run("echo $tmpdir && ls -ltr $tmpdir");
-    
     my @outputs;
-    my @files = glob("$tmpdir/*.txt");
-    @outputs = map { [ $_, 'txt' ] } @files;
-    
+    my $bestTreeFile = $output_name . "_RAxML_bestTree.nwk";
+    copy("RAxML_bestTree.".$output_name, $bestTreeFile);
+    push @outputs, ["$tmpdir/$bestTreeFile", 'nwk'];
+    push @outputs, ["$tmpdir/RAxML_info.".$output_name, 'txt'];
+    push @outputs, ["$tmpdir/jobdesc.json", 'json'];
+
+    chdir($cwd);
+    run("echo $tmpdir && ls -ltr $tmpdir");
+
     return @outputs;
-}
-
-
-sub curl_file {
-    my ($url, $outfile) = @_;
-    my @cmd = ("curl", curl_options(), "-o", $outfile, $url);
-    print STDERR join(" ", @cmd)."\n";
-    my ($out) = run_cmd(\@cmd);
-    return $out;
-}
-
-sub curl_ftp {
-    my ($url, $outfile) = @_;
-    my @cmd = ("curl", "-o", $outfile, $url);
-    print STDERR join(" ", @cmd)."\n";
-    my ($out) = run_cmd(\@cmd);
-    return $out;
-}
-
-sub curl_json {
-    my ($url) = @_;
-    my $out = curl_text($url);
-    my $hash = JSON::decode_json($out);
-    return $hash;
-}
-
-sub curl_options {
-    my @opts;
-    my $token = get_token()->token;
-    push(@opts, "-H", "Authorization: $token");
-    push(@opts, "-H", "Content-Type: multipart/form-data");
-    return @opts;
 }
 
 sub run_cmd {
@@ -262,34 +190,6 @@ sub run_cmd {
     # print STDERR "STDOUT:\n$out\n";
     # print STDERR "STDERR:\n$err\n";
     return ($out, $err);
-}
-
-sub params_to_exps {
-    my ($params) = @_;
-    my @exps;
-    for (@{$params->{paired_end_libs}}) {
-        my $index = $_->{condition} - 1;
-        $index = 0 if $index < 0;
-        push @{$exps[$index]}, [ $_->{read1}, $_->{read2} ];
-    }
-    for (@{$params->{single_end_libs}}) {
-        my $index = $_->{condition} - 1;
-        $index = 0 if $index < 0;
-        push @{$exps[$index]}, [ $_->{read} ];
-    }
-    return \@exps;
-}
-
-sub localize_params {
-    my ($tmpdir, $params) = @_;
-    for (@{$params->{paired_end_libs}}) {
-        $_->{read1} = get_ws_file($tmpdir, $_->{read1}) if $_->{read1};
-        $_->{read2} = get_ws_file($tmpdir, $_->{read2}) if $_->{read2};
-    }
-    for (@{$params->{single_end_libs}}) {
-        $_->{read} = get_ws_file($tmpdir, $_->{read}) if $_->{read};
-    }
-    return $params;
 }
 
 sub get_ws {
@@ -335,20 +235,6 @@ sub write_output {
     open(F, ">$ofile") or die "Could not open $ofile";
     print F $string;
     close(F);
-}
-
-sub break_fasta_lines {
-    my ($fasta) = @_;
-    my @lines = split(/\n/, $fasta);
-    my @fa;
-    for (@lines) {
-        if (/^>/) {
-            push @fa, $_;
-        } else {
-            push @fa, /.{1,60}/g;
-        }
-    }
-    return join("\n", @fa);
 }
 
 sub verify_cmd {

@@ -1,0 +1,9 @@
+{
+    "sequences": "/homes/allan/projects/gene_tree/VPO_2_proteins.phy",
+    "sequence_source": "local_file",
+    "alphabet" : "Protein",
+    "protein_model" : "AUTO",
+    "recipe" : "RAxML",
+    "output_path" : "/allan@patricbrc.org/home/gene_tree/test_2_proteins/",
+    "output_file" : "test_2proteins_raxml"
+}

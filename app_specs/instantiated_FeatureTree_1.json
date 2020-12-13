@@ -1,17 +1,10 @@
 {
-    "id": "FeatureTree",
-    "script": "App-FeatureTree",
-    "label": "Feature/Gene Tree",
-    "description": "Estimate phylogeny of gene or other sequence feature",
-    "default_memory": "4G",
-    "parameters": {
-        "sequences_from_local_file": "/homes/allan/projects/gene_tree/nist30_16s_kma/kma_5.afa",
-        "sequences_from_ws": "/allan@patricbrc.org/home/gene_tree/kma_5.afa",
-        "sequence_source": "msa",
-        "alphabet" : "DNA",
-        "protein_model" : "Wag",
-        "recipe" : "RAxML",
-        "output_path" : "/allan@patricbrc.org/home/gene_tree/",
-        "output_file" : "test_kma5_raxml"
-    }
+    "sequences_from_local_file": "/homes/allan/projects/gene_tree/nist30_16s_kma/kma_5.afa",
+    "sequences_from_ws": "/allan@patricbrc.org/home/gene_tree/kma_5.afa",
+    "sequence_source": "msa",
+    "alphabet" : "DNA",
+    "protein_model" : "AUTO",
+    "recipe" : "RAxML",
+    "output_path" : "/allan@patricbrc.org/home/gene_tree/",
+    "output_file" : "test_kma5_raxml"
 }
