@@ -5,7 +5,8 @@
     "description": "Estimate phylogeny of gene or other sequence feature"
     "default_memory": "4G",
     "parameters": [
-        "sequences": "/allan@patricbrc.org/home/gene_tree/kma_5.afa",
+        "sequences_from_local_file": "/homes/allan/projects/gene_tree/nist30_16s_kma/kma_5.afa",
+        "sequences_from_ws": "/allan@patricbrc.org/home/gene_tree/kma_5.afa",
         "sequence_source": "msa",
         "alphabet" : "DNA",
         "protein_model" : "Wag",
