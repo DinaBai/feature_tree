@@ -1,0 +1,8 @@
+{
+    "sequences": "/allan@patricbrc.org/home/gene_tree/kma_5.afa",
+    "sequence_source": "ws",
+    "alphabet" : "DNA",
+    "recipe" : "raxml",
+    "output_path" : "/allan@patricbrc.org/home/gene_tree/",
+    "output_file" : "kma5_raxml"
+}

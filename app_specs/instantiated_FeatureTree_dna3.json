@@ -1,0 +1,8 @@
+{
+    "sequences": "/homes/allan/projects/gene_tree/nist30_16s_kma/kma_5.phy",
+    "sequence_source": "local_file",
+    "alphabet" : "DNA",
+    "recipe" : "phyml",
+    "output_path" : "/allan@patricbrc.org/home/gene_tree/",
+    "output_file" : "kma5_phyml"
+}

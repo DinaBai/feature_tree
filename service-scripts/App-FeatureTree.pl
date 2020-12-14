@@ -10,7 +10,7 @@ use File::Slurp;
 use File::Basename;
 use IPC::Run 'run';
 use JSON;
-use File::Copy 'copy';
+use File::Copy ('copy', 'move');
 use Bio::KBase::AppService::AppConfig;
 use Bio::KBase::AppService::AppScript;
 use Cwd;
@@ -61,9 +61,6 @@ sub build_tree {
     print "Proc FeatureTree build_tree ", Dumper($app_def, $raw_params, $params);
     my $time1 = `date`;
 
-    #$global_token = $app->token();
-    #$global_ws = $app->workspace;
-    
     my $recipe = $params->{recipe};
     
     my $tmpdir = File::Temp->newdir( "/tmp/FeatureTree_XXXXX", CLEANUP => 0 );
@@ -78,14 +75,25 @@ sub build_tree {
     write_file($jdesc, $json->encode($params));
     
 
+    print "copy data to temp dir\n";
     my $seq_file_name = '';
     if ($params->{sequence_source} eq 'local_file') {
         $seq_file_name = basename($params->{sequences});
-        print STDERR "basename of data file is $seq_file_name\n";
+        print STDERR "input data file is $seq_file_name\n";
         copy($params->{sequences}, "$tmpdir/$seq_file_name") or die ("could not copy $params->{sequences} to $tmpdir/$seq_file_name");
-        run("echo $tmpdir && ls -ltr $tmpdir");
-
     }
+    elsif ($params->{sequence_source} eq 'ws') {
+        $seq_file_name = basename($params->{sequences});
+        print STDERR "input data file is $seq_file_name\n";
+        $app->workspace->download_file($params->{sequences}, "$tmpdir/$seq_file_name", 1, $global_token);
+    }
+    elsif ($params->{sequence_source} eq 'upload') {
+        $seq_file_name = $params->{output_file}."_sequence_input.txt";
+        print STDERR "input data file is $seq_file_name\n";
+        File::Slurp::write_file("$tmpdir/$seq_file_name", $params->{sequences})
+    }
+    run("echo $tmpdir && ls -ltr $tmpdir");
+
     my $model = "AUTO"; # default for protein
     if ($params->{alphabet} eq 'Protein' and $params->{protein_model}) {
         $model = $params->{protein_model}
@@ -97,10 +105,10 @@ sub build_tree {
     my $alphabet = $params->{alphabet};
 
     my @outputs;
-    if ($recipe eq 'RAxML') {
+    if (lc($recipe) eq 'raxml') {
         @outputs = run_raxml($seq_file_name, $alphabet, $model, $output_name, $tmpdir);
-    } elsif ($recipe eq 'PhyML') {
-        @outputs = run_phyml($params, $tmpdir);
+    } elsif (lc($recipe) eq 'phyml') {
+        @outputs = run_phyml($seq_file_name, $alphabet, $model, $output_name, $tmpdir);
     } else {
         die "Unrecognized recipe: $recipe \n";
     }
@@ -171,9 +179,43 @@ sub run_raxml {
     
     my @outputs;
     my $bestTreeFile = $output_name . "_RAxML_bestTree.nwk";
-    copy("RAxML_bestTree.".$output_name, $bestTreeFile);
+    move("RAxML_bestTree.".$output_name, $bestTreeFile);
     push @outputs, ["$tmpdir/$bestTreeFile", 'nwk'];
     push @outputs, ["$tmpdir/RAxML_info.".$output_name, 'txt'];
+    push @outputs, ["$tmpdir/jobdesc.json", 'json'];
+
+    chdir($cwd);
+    run("echo $tmpdir && ls -ltr $tmpdir");
+
+    return @outputs;
+}
+
+sub run_phyml {
+    my ($alignment_file, $alphabet, $model, $output_name, $tmpdir) = @_;
+
+    my $cwd = getcwd();
+    
+    if ($alphabet eq 'DNA') {
+        $model = 'GTR'
+    }
+
+    my @cmd = ("phyml");
+    push @cmd, ("-m", $model);
+    push @cmd, ("-i", $alignment_file);
+    
+    print STDERR "cmd = ", join(" ", @cmd) . "\n\n";
+   
+    chdir($tmpdir); 
+    my ($rc, $out, $err) = run_cmd(\@cmd);
+    print STDERR "STDOUT:\n$out\n";
+    print STDERR "STDERR:\n$err\n";
+    
+    my @outputs;
+    my $treeFile = $alignment_file."_phyml_tree.nwk";
+    move($alignment_file."_phyml_tree.txt", $treeFile);
+    my $statsFile = $alignment_file."_phyml_stats.txt";
+    push @outputs, ["$tmpdir/$treeFile", 'nwk'];
+    push @outputs, ["$tmpdir/$statsFile", 'txt'];
     push @outputs, ["$tmpdir/jobdesc.json", 'json'];
 
     chdir($cwd);
