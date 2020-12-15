@@ -1,0 +1,18 @@
+{
+    "sequences": "
+fig|1005057.4.peg.130
+fig|1005090.4.peg.144
+fig|1009856.3.peg.142
+fig|1009857.3.peg.142
+fig|1009858.3.peg.142
+fig|1009859.3.peg.142
+fig|107806.10.peg.161
+fig|118101.4.peg.144
+fig|118103.3.peg.136
+fig|118109.3.peg.591",
+    "sequence_source": "feature_ids",
+    "alphabet" : "DNA",
+    "recipe" : "raxml",
+    "output_path" : "/allan@patricbrc.org/home/gene_tree/",
+    "output_file" : "kma5_raxml"
+}
