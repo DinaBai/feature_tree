@@ -199,6 +199,39 @@ define([
       // console.log("change genome name, this.numref=", this.numref, "this.ref_genome_id.get('value')=", this.ref_genome_id.get('value'));
     },
 
+    onAlphabetChanged: function () {
+      this.protein_model.options = [];
+      if (this.dna.checked) {
+        var newOptions = [{value: "HKY85", label: "HKY85", selected: true, disabled: false},
+                          {value: "JC69", label: "JC69", selected: true, disabled: false},
+                          {value: "K80", label: "K80", selected: true, disabled: false},
+                          {value: "F81", label: "F81", selected: true, disabled: false},
+                          {value: "F84", label: "F84", selected: true, disabled: false},
+                          {value: "TN93", label: "TN93", selected: true, disabled: false},
+                          {value: "GTR", label: "GTR", selected: true, disabled: false}];        
+        this.protein_model.set("options", newOptions);
+      }
+      else {
+        var newOptions = [{value: "DAYHOFF", label: "DAYHOFF", selected: true, disabled: false},
+                          {value: "DCMUT", label: "DCMUT", selected: false, disabled: false},
+                          {value: "JTT", label: "JTT", selected: false, disabled: false},
+                          {value: "MTREV", label: "MTREV", selected: false, disabled: false},
+                          {value: "WAG", label: "WAG", selected: false, disabled: false},
+                          {value: "RTREV", label: "RTREV", selected: false, disabled: false},
+                          {value: "CPREV", label: "CPREV", selected: false, disabled: false},
+                          {value: "VT", label: "VT", selected: false, disabled: false},
+                          {value: "BLOSUM62", label: "BLOSUM62", selected: false, disabled: false},
+                          {value: "MTMAM", label: "MTMAM", selected: false, disabled: false},
+                          {value: "LG", label: "LG", selected: false, disabled: false},
+                          {value: "MTART", label: "MTART", selected: false, disabled: false},
+                          {value: "HIVB", label: "HIVB", selected: false, disabled: false},
+                          {value: "HIVW", label: "HIVW", selected: false, disabled: false},
+                          {value: "AB", label: "AB", selected: false, disabled: false}];
+        this.protein_model.set("options", newOptions);
+      }
+      this.protein_model.reset();
+    },
+
     makeGenomeName: function () {
       var name = this.comp_genome_id.get('displayedValue');
       var maxName = 36;

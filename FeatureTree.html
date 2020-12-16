@@ -29,6 +29,48 @@
                   <div class="appBox appShadow">
                     <div class="headerrow">
                       <div style="width:85%;display:inline-block;">
+                        <label class="appBoxLabel">Feature Tree</label>
+                        <div name="comparison-genomes-selection" class="infobox iconbox infobutton dialoginfo">
+                          <i class="fa icon-info-circle fa" title="click to open info dialog"></i>
+                        </div>
+                      </div>
+                      <br>
+                      <div class="appsublabel">Choose fasta file or features for tree.</div>
+                    </div>
+                    <div class="appRow">
+                      <!-- <label>Select genome</label><br>
+                      <div style="width:85%;display:inline-block;" data-dojo-attach-event="onChange:onSuggestNameChange" data-dojo-type="p3/widget/GenomeNameSelector" name="comp_genome_id" maxHeight="200" required="false" data-dojo-attach-point="comp_genome_id"></div>
+                      <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddGenome" class="fa icon-plus-circle fa-lg"></i></div>
+                      <br> -->
+                      <label>Select DNA or protein fasta file</label><br>
+                      <div style="width:85%;display:inline-block;" data-dojo-type="p3/widget/WorkspaceObjectSelector" name="sequences" required="false" data-dojo-attach-point="user_genomes_fasta" data-dojo-props="type:['feature_protein_fasta','feature_dna_fasta'],multi:false,promptMessage:'Select or Upload DNA or protein fasta file to your workspace',missingMessage:'User genome file is optional.', placeHolder:'Optional'"></div>
+                      <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddFasta" class="fa icon-plus-circle fa-lg"></i>
+                      </div>
+                      <br>
+                      <label>or select feature group</label><br>
+                      <div style="width:85%;display:inline-block;" data-dojo-type="p3/widget/WorkspaceObjectSelector" name="sequences" required="false" data-dojo-attach-point="user_genomes_featuregroup" data-dojo-props="type:['feature_group'],multi:false,promptMessage:'Select a feature group from your workspace for Comparison',missingMessage:'Feature group is optional.', placeHolder:'Optional'"></div>
+                      <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddFeatureGroup" class="fa icon-plus-circle fa-lg"></i></div>
+                      <br>
+      <!--                 <label>And/or select genome group</label><br>
+                      <div style="width:85%;display:inline-block;" data-dojo-type="p3/widget/WorkspaceObjectSelector" name="user_genomes_genomegroup" required="false" data-dojo-attach-point="user_genomes_genomegroup" data-dojo-props="type:['genome_group'],multi:false,promptMessage:'Select a genome group from your workspace for Comparison',missingMessage:'Genome group is optional.', placeHolder:'Optional'"></div>
+                      <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddGenomeGroup" class="fa icon-plus-circle fa-lg"></i></div>
+                      <br> -->
+                    </div>
+                    <div class="appRow">
+                      <label> selected file/feature table</label>
+                    </div>
+                    <div class="appRow" style="width:90%; margin-top:10px; text-align: center;">
+                      <table class="librarytable" frame="box" data-dojo-attach-point="genomeTable" style="margin:0 0 0 10px; width:100%;">
+                        <tbody data-dojo-attach-point="genomeTableBody">
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="appBox appShadow">
+                    <div class="headerrow">
+                      <div style="width:85%;display:inline-block;">
                         <label class="appBoxLabel">Parameters</label>
                         <div name="parameters" class="infobox iconbox infobutton dialoginfo">
                           <i class="fa icon-info-circle fa" title="click to open info dialog"></i>
@@ -36,7 +78,7 @@
                       </div>
                     </div>
                     <div class="appRow">
-                      <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="dna" name="alphabet" value="dna" checked />
+                      <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="dna" name="alphabet" value="dna" checked data-dojo-attach-event="onChange:onAlphabetChanged"/>
                       <label for="radio1" style="font-size:8pt">DNA</label>
                       <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="protein" name="alphabet" value="protein" />
                       <label for="radio2" style="font-size:8pt">Protein</label>
@@ -51,21 +93,13 @@
                     <div class="appRow">
                       <label class="paramlabel">Model</label><br>
                       <select data-dojo-type="dijit/form/Select" name="protein_model" style="width:50px" data-dojo-attach-point="protein_model" required="true">
-                        <option value="DAYHOFF">DAYHOFF</option>
-                        <option value="DCMUT">DCMUT</option>
-                        <option value="JTT">JTT</option>
-                        <option value="MTREV">MTREV</option>
-                        <option value="WAG">WAG</option>
-                        <option value="RTREV">RTREV</option>
-                        <option value="CPREV">CPREV</option>
-                        <option value="VT">VT</option>
-                        <option value="BLOSUM62">BLOSUM62</option>
-                        <option value="MTMAM">MTMAM</option>
-                        <option value="LG">LG</option>
-                        <option value="MTART">MTART</option>
-                        <option value="HIVB">HIVB</option>
-                        <option value="HIVW">HIVW</option>
-                        <option value="AUTO">AUTO</option>
+                        <option value="HYK85">HKY85</option>
+                        <option value="JC69">JC69</option>
+                        <option value="K80">K80</option>
+                        <option value="F81">F81</option>
+                        <option value="F84">F84</option>
+                        <option value="TN93">TN93</option>
+                        <option value="GTR">GTR</option>
                       </select>
                     </div>
                     <br>
@@ -131,48 +165,7 @@
               </tr> -->
             </table>
           </td>
-          <td>
-            <div class="appBox appShadow">
-              <div class="headerrow">
-                <div style="width:85%;display:inline-block;">
-                  <label class="appBoxLabel">Feature Tree</label>
-                  <div name="comparison-genomes-selection" class="infobox iconbox infobutton dialoginfo">
-                    <i class="fa icon-info-circle fa" title="click to open info dialog"></i>
-                  </div>
-                </div>
-                <br>
-                <div class="appsublabel">Choose fasta file or features for tree.</div>
-              </div>
-              <div class="appRow">
-                <!-- <label>Select genome</label><br>
-                <div style="width:85%;display:inline-block;" data-dojo-attach-event="onChange:onSuggestNameChange" data-dojo-type="p3/widget/GenomeNameSelector" name="comp_genome_id" maxHeight="200" required="false" data-dojo-attach-point="comp_genome_id"></div>
-                <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddGenome" class="fa icon-plus-circle fa-lg"></i></div>
-                <br> -->
-                <label>Select DNA or protein fasta file</label><br>
-                <div style="width:85%;display:inline-block;" data-dojo-type="p3/widget/WorkspaceObjectSelector" name="sequences" required="false" data-dojo-attach-point="user_genomes_fasta" data-dojo-props="type:['feature_protein_fasta','feature_dna_fasta'],multi:false,promptMessage:'Select or Upload DNA or protein fasta file to your workspace',missingMessage:'User genome file is optional.', placeHolder:'Optional'"></div>
-                <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddFasta" class="fa icon-plus-circle fa-lg"></i>
-                </div>
-                <br>
-                <label>And/or select feature group</label><br>
-                <div style="width:85%;display:inline-block;" data-dojo-type="p3/widget/WorkspaceObjectSelector" name="sequences" required="false" data-dojo-attach-point="user_genomes_featuregroup" data-dojo-props="type:['feature_group'],multi:false,promptMessage:'Select a feature group from your workspace for Comparison',missingMessage:'Feature group is optional.', placeHolder:'Optional'"></div>
-                <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddFeatureGroup" class="fa icon-plus-circle fa-lg"></i></div>
-                <br>
-<!--                 <label>And/or select genome group</label><br>
-                <div style="width:85%;display:inline-block;" data-dojo-type="p3/widget/WorkspaceObjectSelector" name="user_genomes_genomegroup" required="false" data-dojo-attach-point="user_genomes_genomegroup" data-dojo-props="type:['genome_group'],multi:false,promptMessage:'Select a genome group from your workspace for Comparison',missingMessage:'Genome group is optional.', placeHolder:'Optional'"></div>
-                <div style="width:10%;display:inline-block;"><i data-dojo-attach-event="click:onAddGenomeGroup" class="fa icon-plus-circle fa-lg"></i></div>
-                <br> -->
-              </div>
-              <div class="appRow">
-                <label> selected file/feature table</label>
-              </div>
-              <div class="appRow" style="width:90%; margin-top:10px; text-align: center;">
-                <table class="librarytable" frame="box" data-dojo-attach-point="genomeTable" style="margin:0 0 0 10px; width:100%;">
-                  <tbody data-dojo-attach-point="genomeTableBody">
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </td>
+          
         </tr>
       </table>
     </div>
